@@ -5,6 +5,7 @@ defmodule Dinodex.Mixfile do
     [app: :dinodex,
      version: "0.0.1",
      elixir: "~> 1.0",
+     escript: [main_module: Dinodex],
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      deps: deps]
