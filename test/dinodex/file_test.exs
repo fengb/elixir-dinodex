@@ -1,18 +1,39 @@
 defmodule Dinodex.FileTest do
   use ExUnit.Case
 
-  test "load dinodex.csv" do
-    data = File.stream!("data/dinodex.csv") |> Dinodex.File.load
-    assert length(data) == 10
+  defp sorted_dinodex(list) do
+    Enum.sort_by list, fn(entry) -> entry[:name] end
+  end
 
+  test "load dinodex.csv" do
+    data = File.stream!("data/dinodex.csv")
+           |> Dinodex.File.load
+           |> sorted_dinodex
+
+    assert length(data) == 10
     assert hd(data) == %{
-      :name => "Albertosaurus",
-      :period => "Late Cretaceous",
+      :name => "Albertonykus",
+      :period => "Early Cretaceous",
       :continent => "North America",
-      :diet => "Carnivore",
-      :weight => 2000,
+      :diet => "Insectivore",
+      :weight => nil,
       :walking => "Biped",
-      :description => "Like a T-Rex but smaller.",
+      :description => "Earliest known Alvarezsaurid.",
+    }
+  end
+
+  test "load african_dinosaur_export.csv" do
+    data = File.stream!("data/african_dinosaur_export.csv")
+           |> Dinodex.File.load
+           |> sorted_dinodex
+
+    assert length(data) == 7
+    assert hd(data) == %{
+      :name => "Abrictosaurus",
+      :period => "Jurassic",
+      :diet => "Herbivore",
+      :weight => 100,
+      :walking => "Biped",
     }
   end
 end
