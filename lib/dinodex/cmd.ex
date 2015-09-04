@@ -1,6 +1,14 @@
 defmodule Dinodex.Cmd do
   use GenServer
 
+  def start_link do
+    :gen_server.start_link(Dinodex.Cmd, [], [])
+  end
+
+  def call(pid, cmd_line) do
+    :gen_server.call(pid, cmd_line)
+  end
+
   def init(dex \\ []) do
     state = %{
       dex: dex,
@@ -15,6 +23,7 @@ defmodule Dinodex.Cmd do
     "filter" => :filter,
     "clear"  => :clear,
     "print"  => :print,
+    "quit"   => :quit,
   }
   def handle_call(cmd_line, _from, state) do
     [cmd_string | args] = String.split(cmd_line)
@@ -76,6 +85,10 @@ defmodule Dinodex.Cmd do
     end
 
     {:reply, output, state}
+  end
+
+  def quit(state) do
+    {:stop, :quit, state}
   end
 
   defp serialize(dino) do
