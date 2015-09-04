@@ -25,24 +25,30 @@ defmodule Dinodex.Cmd do
     "print"  => :print,
     "quit"   => :quit,
   }
+  def handle_call(:prompt, _from, state) do
+    dinos = length(state.dex)
+    {:reply, "#{dinos}> ", state}
+  end
+
   def handle_call(cmd_line, _from, state) do
     [cmd_string | args] = String.split(cmd_line)
     cmd = @calls[cmd_string]
     if cmd do
       apply(Dinodex.Cmd, cmd, [state] ++ args)
     else
-      {:reply, nil, state}
+      {:reply, "Command not found '#{cmd_line}'", state}
     end
   end
 
   def load(state, filename) do
     new_dinos = File.stream!(filename) |> Dinodex.File.load
+    IO.inspect new_dinos
     new_state = %{
       dex: new_dinos ++ state[:dex],
       filters: state[:filters],
     }
 
-    {:reply, nil, new_state}
+    {:reply, "loaded #{filename}", new_state}
   end
 
   def filter(state, command) do
@@ -52,7 +58,7 @@ defmodule Dinodex.Cmd do
       filters: [] ++ state[:filters],
     }
 
-    {:reply, nil, new_state}
+    {:reply, "added filter", new_state}
   end
 
   def clear(state) do
@@ -61,7 +67,7 @@ defmodule Dinodex.Cmd do
       filters: [],
     }
 
-    {:reply, nil, new_state}
+    {:reply, "cleared all filters", new_state}
   end
 
   def print(state) do
