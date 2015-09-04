@@ -43,7 +43,7 @@ defmodule Dinodex.Cmd do
     if state.filters == [] do
       {:reply, "#{dinos}> ", state}
     else
-      filtered = filtered_dex(state.dex) |> length
+      filtered = filtered_dex(state) |> length
       {:reply, "#{dinos} | #{filtered}> ", state}
     end
   end
@@ -59,10 +59,14 @@ defmodule Dinodex.Cmd do
     {:reply, "unloaded #{length(state.dex)}", new_state}
   end
 
-  def handle_call({:filter, command}, _from, state) do
-    new_filter = command
-    new_state = %{ state | filters: [new_filter | state.filters] }
-    {:reply, "added filter", new_state}
+  def handle_call({:filter, name, arg}, _from, state) do
+    new_filter = Dinodex.Filter.anon(name, arg)
+    if is_function(new_filter) do
+      new_state = %{ state | filters: [new_filter | state.filters] }
+      {:reply, "added filter", new_state}
+    else
+      {:reply, "cannot add filter #{name} #{arg}", state}
+    end
   end
 
   def handle_call({:reset}, _from, state) do

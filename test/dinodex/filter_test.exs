@@ -47,4 +47,9 @@ defmodule Dinodex.FilterTest do
   test "match array" do
     assert Dinodex.Filter.match(@dino0, walking: ["Biped", "Quadraped"]) == true
   end
+
+  test "anon" do
+    filter = Dinodex.Filter.anon("walking", "biped")
+    assert filter.(@dex) == [@dino0]
+  end
 end

@@ -1,15 +1,32 @@
 defmodule Dinodex.Filter do
-  def walking(dex, :biped), do: filter(dex, walking: "Biped")
-  def walking(dex, :quadraped), do: filter(dex, walking: "Quadraped")
+  @filters %{
+    "walking" => :walking,
+    "diet"    => :diet,
+    "period"  => :period,
+    "weight"  => :weight,
+  }
+  def anon(name, arg) do
+    name_atom = @filters[to_string(name)]
+    if name_atom do
+      fn(dex) -> apply(Dinodex.Filter, name_atom, [dex, arg]) end
+    end
+  end
 
-  def diet(dex, :carnivore), do: filter(dex, diet: ["Carnivore", "Piscivore", "Insectovore"])
+  def walking(dex, :biped), do: walking(dex, "Biped")
+  def walking(dex, :quadraped), do: walking(dex, "Quadraped")
+  def walking(dex, value), do: filter(dex, walking: value)
 
-  def period(dex, :triassic), do: filter(dex, period: ~r/Triassic$/)
-  def period(dex, :jurassic), do: filter(dex, period: ~r/Jurassic$/)
-  def period(dex, :cretaceous), do: filter(dex, period: ~r/Cretaceous$/)
+  def diet(dex, :carnivore), do: diet(dex, ["Carnivore", "Piscivore", "Insectovore"])
+  def diet(dex, value), do: filter(dex, diet: value)
 
-  def weight(dex, :big), do: filter(dex, weight: fn(w) -> w > 2000 end)
-  def weight(dex, :small), do: filter(dex, weight: fn(w) -> w <= 2000 end)
+  def period(dex, :triassic), do: period(dex, "triassic")
+  def period(dex, :jurassic), do: period(dex, "jurassic")
+  def period(dex, :cretaceous), do: period(dex, "cretaceous")
+  def period(dex, value), do: filter(dex, period: value)
+
+  def weight(dex, :big), do: weight(dex, fn(w) -> w > 2000 end)
+  def weight(dex, :small), do: weight(dex, fn(w) -> w <= 2000 end)
+  def weight(dex, value), do: filter(dex, weight: value)
 
   def filter(dex, check) do
     Enum.filter dex, fn(dino) -> match(dino, check) end
@@ -20,13 +37,23 @@ defmodule Dinodex.Filter do
   end
 
   def match(dino, [{key, check}]) do
+    value = dino[key]
     cond do
-      Regex.regex?(check) ->
-        Regex.match? check, dino[key]
       is_function(check) ->
-        check.(dino[key])
+        check.(value)
+      is_number(value) ->
+        value == as_number(check)
+      Regex.regex?(check) ->
+        Regex.match? check, value
+      is_binary(check) || is_atom(check) ->
+        lcase_check = check |> to_string |> String.downcase
+        String.downcase(value)
+        |> String.contains?(lcase_check)
       true ->
-        dino[key] == check
+        raise ArgumentError, message: "filter #{key}: #{check} not supported"
     end
   end
+
+  defp as_number(val) when is_number(val), do: val
+  defp as_number(val) when is_binary(val), do: String.to_integer(val)
 end
