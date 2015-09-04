@@ -2,7 +2,7 @@ defmodule Dinodex do
   def main(args) do
     {:ok, pid} = Dinodex.Cmd.start_link
 
-    prompt = Dinodex.Cmd.call(pid, :prompt)
+    prompt = Dinodex.Cmd.prompt(pid)
     input = IO.gets(prompt) |> String.strip
 
     reply = Dinodex.Cmd.call(pid, input)

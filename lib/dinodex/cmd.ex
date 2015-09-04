@@ -5,8 +5,26 @@ defmodule Dinodex.Cmd do
     :gen_server.start_link(Dinodex.Cmd, [], [])
   end
 
+  def prompt(pid) do
+    :gen_server.call(pid, :prompt)
+  end
+
+  @calls %{
+    "load"   => :load,
+    "filter" => :filter,
+    "clear"  => :clear,
+    "print"  => :print,
+    "quit"   => :quit,
+    "exit"   => :quit,
+  }
   def call(pid, cmd_line) do
-    :gen_server.call(pid, cmd_line)
+    [cmd_string | args] = String.split(cmd_line)
+    cmd = @calls[cmd_string]
+    if cmd do
+      :gen_server.call(pid, List.to_tuple([cmd | args]))
+    else
+      "Command not found '#{cmd_line}'"
+    end
   end
 
   def init(dex \\ []) do
@@ -18,29 +36,12 @@ defmodule Dinodex.Cmd do
     {:ok, state}
   end
 
-  @calls %{
-    "load"   => :load,
-    "filter" => :filter,
-    "clear"  => :clear,
-    "print"  => :print,
-    "quit"   => :quit,
-  }
   def handle_call(:prompt, _from, state) do
     dinos = length(state.dex)
     {:reply, "#{dinos}> ", state}
   end
 
-  def handle_call(cmd_line, _from, state) do
-    [cmd_string | args] = String.split(cmd_line)
-    cmd = @calls[cmd_string]
-    if cmd do
-      apply(Dinodex.Cmd, cmd, [state] ++ args)
-    else
-      {:reply, "Command not found '#{cmd_line}'", state}
-    end
-  end
-
-  def load(state, filename) do
+  def handle_call({:load, filename}, _from, state) do
     new_dinos = File.stream!(filename) |> Dinodex.File.load
     IO.inspect new_dinos
     new_state = %{
@@ -51,7 +52,7 @@ defmodule Dinodex.Cmd do
     {:reply, "loaded #{filename}", new_state}
   end
 
-  def filter(state, command) do
+  def handle_call({:filter, command}, _from, state) do
     new_filter = nil
     new_state = %{
       dex: state[:dex],
@@ -61,7 +62,7 @@ defmodule Dinodex.Cmd do
     {:reply, "added filter", new_state}
   end
 
-  def clear(state) do
+  def handle_call({:clear}, _from, state) do
     new_state = %{
       dex: state[:dex],
       filters: [],
@@ -70,14 +71,14 @@ defmodule Dinodex.Cmd do
     {:reply, "cleared all filters", new_state}
   end
 
-  def print(state) do
+  def handle_call({:print}, _from, state) do
     output = filtered_dex(state)
              |> Enum.map(&serialize/1)
              |> Enum.join("\n-----\n")
     {:reply, output, state}
   end
 
-  def print(state, name) do
+  def handle_call({:print, name}, _from, state) do
     regex = Regex.compile(name)
     dino = filtered_dex(state)
            |> Enum.find(fn(dino) -> Regex.match? regex, dino[:name] end)
@@ -85,15 +86,15 @@ defmodule Dinodex.Cmd do
       dino ->
         serialize(dino)
       List.first(state[:filters]) ->
-        "Dino #{name} not found. Maybe it's filtered out?"
+        "Dino '#{name}' not found. Maybe it's filtered out?"
       true ->
-        "Dino #{name} not found."
+        "Dino '#{name}' not found."
     end
 
     {:reply, output, state}
   end
 
-  def quit(state) do
+  def handle_call({:quit}, _from, state) do
     {:stop, :quit, state}
   end
 
