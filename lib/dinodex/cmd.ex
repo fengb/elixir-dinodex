@@ -10,17 +10,18 @@ defmodule Dinodex.Cmd do
   end
 
   @calls %{
-    "load"   => :load,
-    "unload" => :unload,
-    "filter" => :filter,
-    "clear"  => :clear,
-    "print"  => :print,
-    "quit"   => :quit,
-    "exit"   => :quit,
+    {"load",   1} => :load,
+    {"unload", 0} => :unload,
+    {"filter", 2} => :filter,
+    {"reset",  0} => :reset,
+    {"print",  0} => :print,
+    {"print",  1} => :print,
+    {"quit",   0} => :quit,
+    {"exit",   0} => :quit,
   }
   def call(pid, cmd_line) do
     [cmd_string | args] = String.split(cmd_line)
-    cmd = @calls[cmd_string]
+    cmd = @calls[{cmd_string, length(args)}]
     if cmd do
       :gen_server.call(pid, List.to_tuple([cmd | args]))
     else
@@ -64,9 +65,9 @@ defmodule Dinodex.Cmd do
     {:reply, "added filter", new_state}
   end
 
-  def handle_call({:clear}, _from, state) do
+  def handle_call({:reset}, _from, state) do
     new_state = %{ state | filters: [] }
-    {:reply, "cleared filters", new_state}
+    {:reply, "reset filters", new_state}
   end
 
   def handle_call({:print}, _from, state) do
