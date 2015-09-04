@@ -24,12 +24,12 @@ defmodule Dinodex.Filter do
   def period(dex, :cretaceous), do: period(dex, "cretaceous")
   def period(dex, value), do: filter(dex, period: value)
 
-  def weight(dex, :big), do: weight(dex, fn(w) -> w > 2000 end)
-  def weight(dex, :small), do: weight(dex, fn(w) -> w <= 2000 end)
+  def weight(dex, :big), do: weight(dex, &(&1 > 2000))
+  def weight(dex, :small), do: weight(dex, &(&1 <= 2000))
   def weight(dex, value), do: filter(dex, weight: value)
 
   def filter(dex, check) do
-    Enum.filter dex, fn(dino) -> match(dino, check) end
+    Enum.filter dex, &(match(&1, check))
   end
 
   def match(dino, [{key, checks}]) when is_list(checks) do
