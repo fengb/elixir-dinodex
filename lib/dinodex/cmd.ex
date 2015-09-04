@@ -11,6 +11,7 @@ defmodule Dinodex.Cmd do
 
   @calls %{
     "load"   => :load,
+    "unload" => :unload,
     "filter" => :filter,
     "clear"  => :clear,
     "print"  => :print,
@@ -38,36 +39,34 @@ defmodule Dinodex.Cmd do
 
   def handle_call(:prompt, _from, state) do
     dinos = length(state.dex)
-    {:reply, "#{dinos}> ", state}
+    if state.filters == [] do
+      {:reply, "#{dinos}> ", state}
+    else
+      filtered = filtered_dex(state.dex) |> length
+      {:reply, "#{dinos} | #{filtered}> ", state}
+    end
   end
 
   def handle_call({:load, filename}, _from, state) do
     new_dinos = File.stream!(filename) |> Dinodex.File.load
-    new_state = %{
-      dex: new_dinos ++ state[:dex],
-      filters: state[:filters],
-    }
+    new_state = %{ state | dex: new_dinos ++ state.dex }
+    {:reply, "loaded #{length(new_dinos)}", new_state}
+  end
 
-    {:reply, "loaded #{length(new_dinos)} dinos", new_state}
+  def handle_call({:unload}, _from, state) do
+    new_state = %{ state | dex: [] }
+    {:reply, "unloaded #{length(state.dex)}", new_state}
   end
 
   def handle_call({:filter, command}, _from, state) do
-    new_filter = nil
-    new_state = %{
-      dex: state[:dex],
-      filters: [] ++ state[:filters],
-    }
-
+    new_filter = command
+    new_state = %{ state | filters: [new_filter | state.filters] }
     {:reply, "added filter", new_state}
   end
 
   def handle_call({:clear}, _from, state) do
-    new_state = %{
-      dex: state[:dex],
-      filters: [],
-    }
-
-    {:reply, "cleared all filters", new_state}
+    new_state = %{ state | filters: [] }
+    {:reply, "cleared filters", new_state}
   end
 
   def handle_call({:print}, _from, state) do
@@ -78,13 +77,16 @@ defmodule Dinodex.Cmd do
   end
 
   def handle_call({:print, name}, _from, state) do
-    regex = Regex.compile(name)
+    name = String.downcase(name)
     dino = filtered_dex(state)
-           |> Enum.find(fn(dino) -> Regex.match? regex, dino[:name] end)
+           |> Enum.find fn(dino) ->
+                String.downcase(dino.name)
+                |> String.contains?(name)
+              end
     output = cond do
       dino ->
         serialize(dino)
-      List.first(state[:filters]) ->
+      List.first(state.filters) ->
         "Dino '#{name}' not found. Maybe it's filtered out?"
       true ->
         "Dino '#{name}' not found."
@@ -104,7 +106,7 @@ defmodule Dinodex.Cmd do
     |> Enum.join("\n")
   end
 
-  defp filtered_dex(state), do: run_filter(state[:dex], state[:filters])
+  defp filtered_dex(state), do: run_filter(state.dex, state.filters)
 
   defp run_filter(dex, []), do: dex
   defp run_filter(dex, [filter | tail]) do
