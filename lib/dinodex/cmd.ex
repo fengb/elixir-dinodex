@@ -43,13 +43,12 @@ defmodule Dinodex.Cmd do
 
   def handle_call({:load, filename}, _from, state) do
     new_dinos = File.stream!(filename) |> Dinodex.File.load
-    IO.inspect new_dinos
     new_state = %{
       dex: new_dinos ++ state[:dex],
       filters: state[:filters],
     }
 
-    {:reply, "loaded #{filename}", new_state}
+    {:reply, "loaded #{length(new_dinos)} dinos", new_state}
   end
 
   def handle_call({:filter, command}, _from, state) do
