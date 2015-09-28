@@ -116,7 +116,7 @@ defmodule Dinodex.Cmd do
   end
 
   def handle_call({:quit}, _from, state) do
-    {:stop, :quit, state}
+    {:stop, :normal, nil, state}
   end
 
   defp help_text do
