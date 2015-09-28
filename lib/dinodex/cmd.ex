@@ -23,22 +23,25 @@ defmodule Dinodex.Cmd do
     :gen_server.call(pid, :prompt)
   end
 
-  @calls %{
-    {"help",   0} => :help,
-    {"load",   1} => :load,
-    {"unload", 0} => :unload,
-    {"filter", 2} => :filter,
-    {"reset",  0} => :reset,
-    {"print",  0} => :print,
-    {"print",  1} => :print,
-    {"quit",   0} => :quit,
-    {"exit",   0} => :quit,
-  }
+  @commands [
+    ["help"],
+    ["load", "<filename>"],
+    ["filter", "<filter>", "<value>"],
+    ["unload"],
+    ["reset"],
+    ["print"],
+    ["print", "<name>"],
+    ["quit"]
+  ]
   def call(pid, cmd_line) do
-    [cmd_string | args] = String.split(cmd_line)
-    cmd = @calls[{cmd_string, length(args)}]
-    if cmd do
-      :gen_server.call(pid, List.to_tuple([cmd | args]))
+    [cmd | args] = String.split(cmd_line)
+    found = Enum.find @commands, fn([search_cmd | search_args]) ->
+      search_cmd == cmd && length(search_args) == length(args)
+    end
+
+    if found do
+      cmd_atom = String.to_existing_atom(cmd)
+      :gen_server.call(pid, List.to_tuple([cmd_atom | args]))
     else
       "Command not found '#{cmd_line}'\n\n#{help_text}"
     end
@@ -120,19 +123,10 @@ defmodule Dinodex.Cmd do
   end
 
   defp help_text do
-    command_help = @calls
-                   |> Enum.map(&help_line/1)
+    command_help = @commands
+                   |> Enum.map(&("  #{Enum.join(&1, " ")}"))
                    |> Enum.join("\n")
     "Available commands:\n#{command_help}"
-  end
-
-  defp help_line({{name, 0}, _sym}), do: "  #{name}"
-  defp help_line({{name, arity}, _sym}) do
-    name_desc = String.ljust(name, 6)
-    arity_desc = (1..arity)
-                 |> Enum.map(&(" arg#{&1}"))
-                 |> Enum.join
-    "  #{name_desc}#{arity_desc}"
   end
 
   defp serialize(dino) do
