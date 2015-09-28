@@ -100,20 +100,16 @@ defmodule Dinodex.Cmd do
     {:reply, output, state}
   end
 
-  def handle_call({:print, name}, _from, state) do
-    name = String.downcase(name)
+  def handle_call({:print, search_name}, _from, state) do
     dino = filtered_dex(state)
-           |> Enum.find fn(dino) ->
-                String.downcase(dino.name)
-                |> String.contains?(name)
-              end
+           |> Enum.find(&(Dinodex.Util.str_icontains?(&1.name, search_name)))
     output = cond do
       dino ->
         serialize(dino)
       List.first(state.filters) ->
-        "Dino '#{name}' not found. Maybe it's filtered out?"
+        "Dino '#{search_name}' not found. Maybe it's filtered out?"
       true ->
-        "Dino '#{name}' not found."
+        "Dino '#{search_name}' not found."
     end
 
     {:reply, output, state}

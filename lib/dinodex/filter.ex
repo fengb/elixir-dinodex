@@ -46,9 +46,7 @@ defmodule Dinodex.Filter do
       Regex.regex?(check) ->
         Regex.match? check, value
       is_binary(check) || is_atom(check) ->
-        lcase_check = check |> to_string |> String.downcase
-        String.downcase(value)
-        |> String.contains?(lcase_check)
+        Dinodex.Util.str_icontains?(value, check)
       true ->
         raise ArgumentError, message: "filter #{key}: #{check} not supported"
     end
