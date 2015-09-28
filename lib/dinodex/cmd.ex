@@ -24,6 +24,7 @@ defmodule Dinodex.Cmd do
   end
 
   @calls %{
+    {"help",   0} => :help,
     {"load",   1} => :load,
     {"unload", 0} => :unload,
     {"filter", 2} => :filter,
@@ -39,7 +40,7 @@ defmodule Dinodex.Cmd do
     if cmd do
       :gen_server.call(pid, List.to_tuple([cmd | args]))
     else
-      "Command not found '#{cmd_line}'"
+      "Command not found '#{cmd_line}'\n\n#{help_text}"
     end
   end
 
@@ -60,6 +61,10 @@ defmodule Dinodex.Cmd do
       filtered = filtered_dex(state) |> length
       {:reply, "#{dinos} | #{filtered}> ", state}
     end
+  end
+
+  def handle_call({:help}, _from, state) do
+    {:reply, help_text, state}
   end
 
   def handle_call({:load, filename}, _from, state) do
@@ -116,6 +121,22 @@ defmodule Dinodex.Cmd do
 
   def handle_call({:quit}, _from, state) do
     {:stop, :quit, state}
+  end
+
+  defp help_text do
+    command_help = @calls
+                   |> Enum.map(&help_line/1)
+                   |> Enum.join("\n")
+    "Available commands:\n#{command_help}"
+  end
+
+  defp help_line({{name, 0}, _sym}), do: "  #{name}"
+  defp help_line({{name, arity}, _sym}) do
+    name_desc = String.ljust(name, 6)
+    arity_desc = (1..arity)
+                 |> Enum.map(&(" arg#{&1}"))
+                 |> Enum.join
+    "  #{name_desc}#{arity_desc}"
   end
 
   defp serialize(dino) do
