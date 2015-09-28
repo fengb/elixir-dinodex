@@ -1,6 +1,20 @@
 defmodule Dinodex.Cmd do
   use GenServer
 
+  def repl do
+    {:ok, pid} = Dinodex.Cmd.start_link
+    repl(pid)
+  end
+
+  defp repl(pid) do
+    prompt = Dinodex.Cmd.prompt(pid)
+    input = IO.gets(prompt) |> String.strip
+
+    reply = Dinodex.Cmd.call(pid, input)
+    if reply, do: IO.puts(reply)
+    if Process.alive?(pid), do: repl(pid)
+  end
+
   def start_link do
     :gen_server.start_link(Dinodex.Cmd, [], [])
   end
