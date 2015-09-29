@@ -95,9 +95,7 @@ defmodule Dinodex.Cmd do
 
   def handle_call({:filter, name, arg}, _from, state) do
     try do
-      filter_func = Dinodex.Filter.anon(name, arg)
-      filter_name = "#{name} #{arg}"
-      filter = {filter_name, filter_func}
+      filter = Dinodex.FilterEntry.create(name, arg)
       new_state = %{ state | filters: [filter | state.filters] }
       {:reply, "added filter", new_state}
     rescue _e in UndefinedFunctionError ->
@@ -117,13 +115,13 @@ defmodule Dinodex.Cmd do
   end
 
   def handle_call({:print, "filters"}, _from, state) do
-    output = Enum.map_join(state.filters, "\n", &filter_name/1)
+    output = Enum.map_join(state.filters, "\n", &Dinodex.Filter.desc/1)
     {:reply, output, state}
   end
 
   def handle_call({:print, search_name}, _from, state) do
     dino = filtered_dex(state)
-           |> Enum.find(&(Dinodex.Util.str_icontains?(&1.name, search_name)))
+           |> Dinodex.Filter.find(name: search_name)
     output = cond do
       dino ->
         serialize(dino)
@@ -152,14 +150,6 @@ defmodule Dinodex.Cmd do
   end
 
   defp filtered_dex(state) do
-    run_filters(state.dex, Enum.map(state.filters, &filter_func/1))
+    Dinodex.FilterEntry.apply_all(state.dex, state.filters)
   end
-
-  defp run_filters(dex, []), do: dex
-  defp run_filters(dex, [func | tail]) do
-    func.(dex) |> run_filters(tail)
-  end
-
-  defp filter_name({name, _func}), do: name
-  defp filter_func({_name, func}), do: func
 end
