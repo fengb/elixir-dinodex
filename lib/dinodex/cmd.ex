@@ -8,9 +8,9 @@ defmodule Dinodex.Cmd do
 
   defp repl(pid) do
     prompt = Dinodex.Cmd.prompt(pid)
-    input = IO.gets(prompt) |> String.strip
+    input = IO.gets(prompt)
 
-    reply = Dinodex.Cmd.call(pid, input)
+    reply = Dinodex.Cmd.call(pid, String.strip(input))
     if reply, do: IO.puts(reply)
     if Process.alive?(pid), do: repl(pid)
   end
@@ -21,6 +21,15 @@ defmodule Dinodex.Cmd do
 
   def prompt(pid) do
     :gen_server.call(pid, :prompt)
+  end
+
+  def call(pid, cmd_line) do
+    command = parse_command(cmd_line)
+    if command do
+      :gen_server.call(pid, command)
+    else
+      "Command not found '#{cmd_line}'\n\n#{help_text}"
+    end
   end
 
   @commands [
@@ -34,7 +43,7 @@ defmodule Dinodex.Cmd do
     ["print", "<name>"],
     ["quit"]
   ]
-  def call(pid, cmd_line) do
+  def parse_command(cmd_line) do
     [cmd | args] = String.split(cmd_line)
     found = Enum.find @commands, fn([search_cmd | search_args]) ->
       search_cmd == cmd && length(search_args) == length(args)
@@ -42,9 +51,7 @@ defmodule Dinodex.Cmd do
 
     if found do
       cmd_atom = String.to_existing_atom(cmd)
-      :gen_server.call(pid, List.to_tuple([cmd_atom | args]))
-    else
-      "Command not found '#{cmd_line}'\n\n#{help_text}"
+      List.to_tuple([cmd_atom | args])
     end
   end
 
