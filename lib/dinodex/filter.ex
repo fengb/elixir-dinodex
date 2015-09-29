@@ -8,16 +8,16 @@ defmodule Dinodex.Filter do
   def anon(name, arg) do
     name_atom = @filters[to_string(name)]
     if name_atom do
-      try do
-        arg_atom = String.lcase(arg) |> String.to_existing_atom
-        anonp(name_atom, arg_atom)
-      rescue _e in ArgumentError ->
-        anonp(name_atom, arg)
-      end
+      arg = try do
+              String.downcase(arg) |> String.to_existing_atom
+            rescue _e in ArgumentError ->
+              arg
+            end
+
+      anon = fn(dex) -> apply(Dinodex.Filter, name_atom, [dex, arg]) end
+      anon.([]) # make sure filters runs properly
+      anon
     end
-  end
-  defp anonp(name, arg) do
-    fn(dex) -> apply(Dinodex.Filter, name, [dex, arg]) end
   end
 
   def walking(dex, :biped), do: walking(dex, "Biped")
@@ -36,28 +36,14 @@ defmodule Dinodex.Filter do
   def weight(dex, :small), do: weight(dex, &(&1 <= 2000))
   def weight(dex, value), do: filter(dex, weight: value)
 
-  def filter(dex, check) do
-    Enum.filter dex, &(match(&1, check))
-  end
+  def filter(dex, check), do: Enum.filter(dex, &(match(&1, check)))
 
-  def match(dino, [{key, checks}]) when is_list(checks) do
-    Enum.any? checks, fn(check) -> match(dino, [{key, check}]) end
-  end
-
-  def match(dino, [{key, check}]) do
-    value = dino[key]
-    cond do
-      is_function(check) ->
-        check.(value)
-      is_number(value) ->
-        value == as_number(check)
-      Regex.regex?(check) ->
-        Regex.match? check, value
-      is_binary(check) || is_atom(check) ->
-        Dinodex.Util.str_icontains?(value, check)
-      true ->
-        raise ArgumentError, message: "filter #{key}: #{check} not supported"
-    end
+  def match(dino, [{key, checks}]) when is_list(checks), do: Enum.any?(checks, &(match(dino, [{key, &1}])))
+  def match(dino, [{key, check}]) when is_function(check), do: check.(dino[key])
+  def match(dino, [{key, check}]) when is_number(check), do: dino[key] == as_number(check)
+  def match(dino, [{key, check}]) when is_binary(check), do: Dinodex.Util.str_icontains?(dino[key], check)
+  def match(_dino, [{key, check}]) do
+    raise ArgumentError, message: "filter #{key}: #{check} not supported"
   end
 
   defp as_number(val) when is_number(val), do: val
