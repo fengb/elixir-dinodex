@@ -109,8 +109,12 @@ defmodule Dinodex.Cmd do
   end
 
   def handle_call({:print}, _from, state) do
-    output = filtered_dex(state)
-             |> Enum.map_join("\n-----\n", &serialize/1)
+    output = filtered_dex(state) |> Dinodex.Serialize.display
+    {:reply, output, state}
+  end
+
+  def handle_call({:print, "json"}, _from, state) do
+    {:ok, output} = filtered_dex(state) |> Dinodex.Serialize.json
     {:reply, output, state}
   end
 
@@ -124,7 +128,7 @@ defmodule Dinodex.Cmd do
            |> Dinodex.Filter.find(name: search_name)
     output = cond do
       dino ->
-        serialize(dino)
+        Dinodex.Serialize.inspect(dino)
       hd(state.filters) ->
         "Dino '#{search_name}' not found. Maybe it's filtered out?"
       true ->
@@ -141,12 +145,6 @@ defmodule Dinodex.Cmd do
   defp help_text do
     command_help = Enum.map_join @commands, "\n", &("  " <> Enum.join(&1, " "))
     "Available commands:\n#{command_help}"
-  end
-
-  defp serialize(dino) do
-    dino
-    |> Enum.filter(fn({_key, value}) -> value end)
-    |> Enum.map_join("\n", fn({key, value}) -> "#{key}: #{value}" end)
   end
 
   defp filtered_dex(state) do

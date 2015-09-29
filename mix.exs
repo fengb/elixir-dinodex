@@ -30,7 +30,8 @@ defmodule Dinodex.Mixfile do
   # Type `mix help deps` for more examples and options
   defp deps do
     [
-      {:csv, "~> 1.1.1"}
+      {:csv, "~> 1.1.1"},
+      {:json, "~> 0.3.0"},
     ]
   end
 end
