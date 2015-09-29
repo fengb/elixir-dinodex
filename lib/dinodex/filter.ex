@@ -1,4 +1,16 @@
 defmodule Dinodex.Filter do
+  def anon(name, arg) do
+    name_atom = Dinodex.Util.to_atom name, fn ->
+      raise UndefinedFunctionError, message: "#{name} filter does not exist"
+    end
+
+    arg = Dinodex.Util.to_atom(arg, default: arg)
+
+    anon = fn(dex) -> apply(Dinodex.Filter, name_atom, [dex, arg]) end
+    anon.([]) # make sure filters runs properly
+    anon
+  end
+
   def walking(dex, :biped), do: walking(dex, "Biped")
   def walking(dex, :quadraped), do: walking(dex, "Quadraped")
   def walking(dex, value), do: filter(dex, walking: value)

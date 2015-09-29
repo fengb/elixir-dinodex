@@ -96,7 +96,7 @@ defmodule Dinodex.Cmd do
 
   def handle_call({:filter, name, arg}, _from, state) do
     try do
-      filter = Dinodex.FilterEntry.create(name, arg)
+      filter = create_filter_entry(name, arg)
       new_state = %{ state | filters: [filter | state.filters] }
       {:reply, "added filter", new_state}
     rescue _e in UndefinedFunctionError ->
@@ -120,7 +120,7 @@ defmodule Dinodex.Cmd do
   end
 
   def handle_call({:print, "filters"}, _from, state) do
-    output = Enum.map_join(state.filters, "\n", &Dinodex.Filter.desc/1)
+    output = Enum.map_join(state.filters, "\n", &(&1.desc))
     {:reply, output, state}
   end
 
@@ -149,6 +149,13 @@ defmodule Dinodex.Cmd do
   end
 
   defp filtered_dex(state) do
-    Dinodex.FilterEntry.apply_all(state.dex, state.filters)
+    Enum.reduce(state.filters, state.dex, &(&1.func.(&2)))
+  end
+
+  defp create_filter_entry(name, arg) do
+    %{
+      func: Dinodex.Filter.anon(name, arg),
+      desc: "#{name} #{arg}",
+    }
   end
 end

@@ -47,4 +47,19 @@ defmodule Dinodex.FilterTest do
   test "match array" do
     assert Dinodex.Filter.match(@dino0, walking: ["Biped", "Quadraped"])
   end
+
+  test "anon" do
+    filter = Dinodex.FilterEntry.anon("walking", "biped")
+    assert filter.(@dex) == [@dino0]
+  end
+
+  test "anon fails gracefully" do
+    assert_raise UndefinedFunctionError, fn ->
+      Dinodex.FilterEntry.anon("test", "bar")
+    end
+
+    assert_raise UndefinedFunctionError, fn ->
+      Dinodex.FilterEntry.anon("missingno", "bar")
+    end
+  end
 end
