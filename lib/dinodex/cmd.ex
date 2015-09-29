@@ -101,15 +101,12 @@ defmodule Dinodex.Cmd do
 
   def handle_call({:print}, _from, state) do
     output = filtered_dex(state)
-             |> Enum.map(&serialize/1)
-             |> Enum.join("\n-----\n")
+             |> Enum.map_join("\n-----\n", &serialize/1)
     {:reply, output, state}
   end
 
   def handle_call({:print, "filters"}, _from, state) do
-    output = state.filters
-             |> Enum.map(fn({name, _func}) -> name end)
-             |> Enum.join("\n")
+    output = Enum.map_join(state.filters, "\n", &filter_name/1)
     {:reply, output, state}
   end
 
@@ -133,23 +130,25 @@ defmodule Dinodex.Cmd do
   end
 
   defp help_text do
-    command_help = @commands
-                   |> Enum.map(&("  #{Enum.join(&1, " ")}"))
-                   |> Enum.join("\n")
+    command_help = Enum.map_join @commands, "\n", &("  " <> Enum.join(&1, " "))
     "Available commands:\n#{command_help}"
   end
 
   defp serialize(dino) do
     dino
     |> Enum.filter(fn({_key, value}) -> value end)
-    |> Enum.map(fn({key, value}) -> "#{key}: #{value}" end)
-    |> Enum.join("\n")
+    |> Enum.map_join("\n", fn({key, value}) -> "#{key}: #{value}" end)
   end
 
-  defp filtered_dex(state), do: run_filters(state.dex, state.filters)
+  defp filtered_dex(state) do
+    run_filters(state.dex, Enum.map(state.filters, &filter_func/1))
+  end
 
   defp run_filters(dex, []), do: dex
-  defp run_filters(dex, [{_name, func} | tail]) do
+  defp run_filters(dex, [func | tail]) do
     func.(dex) |> run_filters(tail)
   end
+
+  defp filter_name({name, _func}), do: name
+  defp filter_func({_name, func}), do: func
 end
