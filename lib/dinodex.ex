@@ -1,6 +1,7 @@
 defmodule Dinodex do
-  def main(_args) do
-    Dinodex.Cmd.repl
+  def main(args) do
+    commands = Enum.map args, &({:load, &1})
+    Dinodex.Cmd.repl(commands)
     IO.puts "Goodbye!"
   end
 end

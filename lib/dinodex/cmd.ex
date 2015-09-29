@@ -1,12 +1,13 @@
 defmodule Dinodex.Cmd do
   use GenServer
 
-  def repl do
+  def repl(start_commands \\ []) do
     {:ok, pid} = Dinodex.Cmd.start_link
-    repl(pid)
+    Enum.each start_commands, &IO.puts(:gen_server.call(pid, &1))
+    replp(pid)
   end
 
-  defp repl(pid) do
+  defp replp(pid) do
     prompt = Dinodex.Cmd.prompt(pid)
     input = IO.gets(prompt)
 
