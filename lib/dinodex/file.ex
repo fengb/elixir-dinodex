@@ -17,13 +17,13 @@ defmodule Dinodex.File do
   defp convert_dinodex(list) do
     Enum.map list, fn(row) ->
       %{
-        :name => row["NAME"],
-        :period => row["PERIOD"],
-        :continent => row["CONTINENT"],
-        :diet => row["DIET"],
-        :weight => as_integer(row["WEIGHT_IN_LBS"]),
-        :walking => row["WALKING"],
-        :description => row["DESCRIPTION"],
+        name: row["NAME"],
+        period: row["PERIOD"],
+        continent: row["CONTINENT"],
+        diet: row["DIET"],
+        weight: as_integer(row["WEIGHT_IN_LBS"]),
+        walking: row["WALKING"],
+        description: row["DESCRIPTION"],
       }
     end
   end
@@ -31,11 +31,11 @@ defmodule Dinodex.File do
   defp convert_african(list) do
     Enum.map list, fn(row) ->
       %{
-        :name => row["Genus"],
-        :period => row["Period"],
-        :diet => if(as_boolean(row["Carnivore"]), do: "Carnivore", else: "Herbivore"),
-        :weight => as_integer(row["Weight"]),
-        :walking => row["Walking"],
+        name: row["Genus"],
+        period: row["Period"],
+        diet: if(as_boolean(row["Carnivore"]), do: "Carnivore", else: "Herbivore"),
+        weight: as_integer(row["Weight"]),
+        walking: row["Walking"],
       }
     end
   end
@@ -49,7 +49,5 @@ defmodule Dinodex.File do
     end
   end
 
-  defp as_boolean(value) do
-    if(value == "Yes", do: true, else: false)
-  end
+  defp as_boolean(value), do: value == "Yes"
 end

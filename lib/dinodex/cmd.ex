@@ -79,9 +79,13 @@ defmodule Dinodex.Cmd do
   end
 
   def handle_call({:load, filename}, _from, state) do
-    new_dinos = File.stream!(filename) |> Dinodex.File.load
-    new_state = %{ state | dex: new_dinos ++ state.dex }
-    {:reply, "loaded #{length(new_dinos)}", new_state}
+    if File.regular?(filename) do
+      new_dinos = File.stream!(filename) |> Dinodex.File.load
+      new_state = %{ state | dex: new_dinos ++ state.dex }
+      {:reply, "loaded #{length(new_dinos)} dinos", new_state}
+    else
+      {:reply, "Cannot load file #{filename}", state}
+    end
   end
 
   def handle_call({:unload}, _from, state) do
