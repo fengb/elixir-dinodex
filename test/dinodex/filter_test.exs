@@ -8,48 +8,58 @@ defmodule Dinodex.FilterTest do
   @dex [@dino0, @dino1, @dino2]
 
   test "walking" do
-    biped = @dex |> Dinodex.Filter.walking(:biped)
+    biped = Dinodex.Filter.walking(@dex, :biped)
     assert biped == [@dino0]
 
-    quadraped = @dex |> Dinodex.Filter.walking(:quadraped)
+    quadraped = Dinodex.Filter.walking(@dex, :quadraped)
     assert quadraped == [@dino1, @dino2]
   end
 
   test "diet" do
-    carnivores = @dex |> Dinodex.Filter.diet(:carnivore)
+    carnivores = Dinodex.Filter.diet(@dex, :carnivore)
     assert carnivores == [@dino1, @dino2]
   end
 
   test "period" do
-    triassic = @dex |> Dinodex.Filter.period(:triassic)
+    triassic = Dinodex.Filter.period(@dex, :triassic)
     assert triassic == [@dino2]
 
-    jurassic = @dex |> Dinodex.Filter.period(:jurassic)
+    jurassic = Dinodex.Filter.period(@dex, :jurassic)
     assert jurassic == [@dino0, @dino1]
 
-    cretaceous = @dex |> Dinodex.Filter.period(:cretaceous)
+    cretaceous = Dinodex.Filter.period(@dex, :cretaceous)
     assert cretaceous == []
   end
 
   test "weight" do
-    big = @dex |> Dinodex.Filter.weight(:big)
+    big = Dinodex.Filter.weight(@dex, :big)
     assert big == [@dino0, @dino2]
 
-    small = @dex |> Dinodex.Filter.weight(:small)
+    small = Dinodex.Filter.weight(@dex, :small)
     assert small == [@dino1]
   end
 
   test "match string" do
-    assert Dinodex.Filter.match(@dino0, walking: "Biped") == true
-    assert Dinodex.Filter.match(@dino0, walking: "Quadraped") == false
+    assert Dinodex.Filter.match(@dino0, walking: "Biped")
+    refute Dinodex.Filter.match(@dino0, walking: "Quadraped")
   end
 
   test "match array" do
-    assert Dinodex.Filter.match(@dino0, walking: ["Biped", "Quadraped"]) == true
+    assert Dinodex.Filter.match(@dino0, walking: ["Biped", "Quadraped"])
   end
 
   test "anon" do
     filter = Dinodex.Filter.anon("walking", "biped")
     assert filter.(@dex) == [@dino0]
+  end
+
+  test "anon fails gracefully" do
+    assert_raise UndefinedFunctionError, fn ->
+      Dinodex.Filter.anon("test", "bar")
+    end
+
+    assert_raise UndefinedFunctionError, fn ->
+      Dinodex.Filter.anon("missingno", "bar")
+    end
   end
 end

@@ -1,23 +1,14 @@
 defmodule Dinodex.Filter do
-  @filters %{
-    "walking" => :walking,
-    "diet"    => :diet,
-    "period"  => :period,
-    "weight"  => :weight,
-  }
   def anon(name, arg) do
-    name_atom = @filters[to_string(name)]
-    if name_atom do
-      arg = try do
-              String.downcase(arg) |> String.to_existing_atom
-            rescue _e in ArgumentError ->
-              arg
-            end
-
-      anon = fn(dex) -> apply(Dinodex.Filter, name_atom, [dex, arg]) end
-      anon.([]) # make sure filters runs properly
-      anon
+    name_atom = Dinodex.Util.to_atom name, fn ->
+      raise UndefinedFunctionError, message: "#{name} filter does not exist"
     end
+
+    arg = Dinodex.Util.to_atom(arg, default: arg)
+
+    anon = fn(dex) -> apply(Dinodex.Filter, name_atom, [dex, arg]) end
+    anon.([]) # make sure filters runs properly
+    anon
   end
 
   def walking(dex, :biped), do: walking(dex, "Biped")

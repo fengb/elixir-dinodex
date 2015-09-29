@@ -78,15 +78,15 @@ defmodule Dinodex.Cmd do
 
   def handle_call({:unload}, _from, state) do
     new_state = %{ state | dex: [] }
-    {:reply, "unloaded #{length(state.dex)}", new_state}
+    {:reply, "unloaded #{length(state.dex)} dinos", new_state}
   end
 
   def handle_call({:filter, name, arg}, _from, state) do
-    new_filter = Dinodex.Filter.anon(name, arg)
-    if is_function(new_filter) do
+    try do
+      new_filter = Dinodex.Filter.anon(name, arg)
       new_state = %{ state | filters: [new_filter | state.filters] }
       {:reply, "added filter", new_state}
-    else
+    rescue _e in UndefinedFunctionError ->
       {:reply, "cannot add filter #{name} #{arg}", state}
     end
   end
