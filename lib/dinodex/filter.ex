@@ -8,8 +8,16 @@ defmodule Dinodex.Filter do
   def anon(name, arg) do
     name_atom = @filters[to_string(name)]
     if name_atom do
-      fn(dex) -> apply(Dinodex.Filter, name_atom, [dex, arg]) end
+      try do
+        arg_atom = String.lcase(arg) |> String.to_existing_atom
+        anonp(name_atom, arg_atom)
+      rescue _e in ArgumentError ->
+        anonp(name_atom, arg)
+      end
     end
+  end
+  defp anonp(name, arg) do
+    fn(dex) -> apply(Dinodex.Filter, name, [dex, arg]) end
   end
 
   def walking(dex, :biped), do: walking(dex, "Biped")
