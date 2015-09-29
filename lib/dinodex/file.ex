@@ -1,6 +1,9 @@
 defmodule Dinodex.File do
-  def load(file) do
-    CSV.decode(file, headers: true)
+  def load!(filename) do
+    File.read!(filename) # toss error if unreadable
+
+    File.stream!(filename)
+    |> CSV.decode(headers: true)
     |> Enum.to_list
     |> convert
   end

@@ -2,8 +2,7 @@ defmodule Dinodex.FileTest do
   use ExUnit.Case
 
   test "load dinodex.csv" do
-    data = File.stream!("data/dinodex.csv")
-           |> Dinodex.File.load
+    data = Dinodex.File.load!("data/dinodex.csv")
            |> Enum.sort_by &(&1.name)
 
     assert length(data) == 10
@@ -19,8 +18,7 @@ defmodule Dinodex.FileTest do
   end
 
   test "load african_dinosaur_export.csv" do
-    data = File.stream!("data/african_dinosaur_export.csv")
-           |> Dinodex.File.load
+    data = Dinodex.File.load!("data/african_dinosaur_export.csv")
            |> Enum.sort_by &(&1.name)
 
     assert length(data) == 7
