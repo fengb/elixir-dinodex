@@ -30,6 +30,7 @@ defmodule Dinodex.Cmd do
     ["unload"],
     ["reset"],
     ["print"],
+    ["print", "filters"],
     ["print", "<name>"],
     ["quit"]
   ]
@@ -83,8 +84,10 @@ defmodule Dinodex.Cmd do
 
   def handle_call({:filter, name, arg}, _from, state) do
     try do
-      new_filter = Dinodex.Filter.anon(name, arg)
-      new_state = %{ state | filters: [new_filter | state.filters] }
+      filter_func = Dinodex.Filter.anon(name, arg)
+      filter_name = "#{name} #{arg}"
+      filter = {filter_name, filter_func}
+      new_state = %{ state | filters: [filter | state.filters] }
       {:reply, "added filter", new_state}
     rescue _e in UndefinedFunctionError ->
       {:reply, "cannot add filter #{name} #{arg}", state}
@@ -103,13 +106,20 @@ defmodule Dinodex.Cmd do
     {:reply, output, state}
   end
 
+  def handle_call({:print, "filters"}, _from, state) do
+    output = state.filters
+             |> Enum.map(fn({name, _func}) -> name end)
+             |> Enum.join("\n")
+    {:reply, output, state}
+  end
+
   def handle_call({:print, search_name}, _from, state) do
     dino = filtered_dex(state)
            |> Enum.find(&(Dinodex.Util.str_icontains?(&1.name, search_name)))
     output = cond do
       dino ->
         serialize(dino)
-      List.first(state.filters) ->
+      hd(state.filters) ->
         "Dino '#{search_name}' not found. Maybe it's filtered out?"
       true ->
         "Dino '#{search_name}' not found."
@@ -136,10 +146,10 @@ defmodule Dinodex.Cmd do
     |> Enum.join("\n")
   end
 
-  defp filtered_dex(state), do: run_filter(state.dex, state.filters)
+  defp filtered_dex(state), do: run_filters(state.dex, state.filters)
 
-  defp run_filter(dex, []), do: dex
-  defp run_filter(dex, [filter | tail]) do
-    filter.(dex) |> run_filter(tail)
+  defp run_filters(dex, []), do: dex
+  defp run_filters(dex, [{_name, func} | tail]) do
+    func.(dex) |> run_filters(tail)
   end
 end
